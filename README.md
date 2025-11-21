@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🚀 Luciai Studio v2.0 - Cloud-Powered AI-Enabled IDE
 
 ![Luciai Studio Logo](./public/luciai-logo.jpg)
@@ -337,3 +338,6 @@ See [LICENSE](./LICENSE) for details.
 
 *Version 2.0.0 - Cloud-Powered AI-Enabled Edition*  
 *Last Updated: November 6, 2025*
+=======
+# luciai-studio
+>>>>>>> 7839a4d399cfd20f7aae4d405a52c9067c918a4d
