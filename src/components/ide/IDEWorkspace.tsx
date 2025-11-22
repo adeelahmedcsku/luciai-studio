@@ -6,7 +6,8 @@ import {
   PanelRightIcon,
   TerminalIcon,
   BotIcon,
-  FolderIcon 
+  FolderIcon, 
+  FileIcon
 } from "lucide-react";
 import FileExplorer from "./FileExplorer";
 import AgentChat from "./AgentChat";

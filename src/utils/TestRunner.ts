@@ -145,7 +145,7 @@ async function detectTestRunner(
  * Build test command arguments
  */
 function buildTestCommand(
-  testRunner: { command: string; type: string },
+  _testRunner: { command: string; type: string },
   options: {
     pattern?: string;
     watch?: boolean;
@@ -237,7 +237,7 @@ function parseJSONOutput(jsonString: string): TestRunResult {
 /**
  * Parse text test output
  */
-function parseTextOutput(output: string, type: string): TestRunResult {
+function parseTextOutput(output: string, _type: string): TestRunResult {
   const lines = output.split("\n");
 
   let totalTests = 0;

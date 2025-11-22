@@ -1,3 +1,5 @@
+import React from "react";
+
 // Theme System for IDE
 export interface Theme {
   id: string;

@@ -139,7 +139,7 @@ export default function CommandPalette({
                   <div className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase">
                     {category}
                   </div>
-                  {cmds.map((command, index) => {
+                  {cmds.map((command, _index) => {
                     const globalIndex = filteredCommands.indexOf(command);
                     return (
                       <button

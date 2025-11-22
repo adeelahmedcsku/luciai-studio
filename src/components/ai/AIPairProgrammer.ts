@@ -17,7 +17,7 @@
  * @version 1.0.0
  */
 
-import { invoke } from '@tauri-apps/api/tauri';
+import { invoke } from '@tauri-apps/api/core';
 
 /**
  * Message role types
@@ -208,7 +208,7 @@ export interface LearningTopic {
 export class AIPairProgrammer {
   private sessions: Map<string, ConversationSession> = new Map();
   private activeSessionId: string | null = null;
-  private contextMemory: Map<string, any> = new Map();
+  private _contextMemory: Map<string, any> = new Map();
 
   /**
    * Start new conversation session
@@ -740,7 +740,7 @@ export class AIPairProgrammer {
     };
   }
 
-  private parseReviewFeedback(response: string): CodeReviewFeedback {
+  private parseReviewFeedback(_response: string): CodeReviewFeedback {
     return {
       file: 'reviewed_file',
       overallRating: 7,

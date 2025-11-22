@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use anyhow::Result;
+use regex::Regex;
 
 use crate::llm::{LLMClient, GenerationRequest};
 use super::pipeline::ProjectPlan;
@@ -15,6 +16,7 @@ pub struct DeploymentGuide {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum DeploymentPlatform {
     Vercel,
     Netlify,
@@ -46,7 +48,6 @@ impl DeploymentGenerator {
         }
     }
     
-    /// Generate deployment guide for a platform
     pub async fn generate_deployment_guide(
         &self,
         plan: &ProjectPlan,
@@ -55,27 +56,27 @@ impl DeploymentGenerator {
         let platform_name = self.platform_name(&platform);
         
         let prompt = format!(
-            r#"Generate a comprehensive deployment guide for deploying this project to {platform}:
+            "Generate a comprehensive deployment guide for deploying this project to {}:
 
-PROJECT: {name}
-DESCRIPTION: {description}
-DEPENDENCIES: {deps}
+PROJECT: {}
+DESCRIPTION: {}
+DEPENDENCIES: {}
 
 Create a step-by-step deployment guide in JSON format:
 {{
-  "steps": [
+  \"steps\": [
     {{
-      "order": 1,
-      "title": "Prepare Project",
-      "description": "Detailed description of what to do",
-      "commands": ["command1", "command2"],
-      "notes": ["Important note 1", "Important note 2"]
+      \"order\": 1,
+      \"title\": \"Prepare Project\",
+      \"description\": \"Detailed description of what to do\",
+      \"commands\": [\"command1\", \"command2\"],
+      \"notes\": [\"Important note 1\", \"Important note 2\"]
     }}
   ],
-  "prerequisites": ["prerequisite1", "prerequisite2"],
-  "environment_setup": "Detailed instructions for setting up environment variables",
-  "deployment_script": "#!/bin/bash # Deployment script content",
-  "ci_cd_config": "# CI/CD configuration file content"
+  \"prerequisites\": [\"prerequisite1\", \"prerequisite2\"],
+  \"environment_setup\": \"Detailed instructions for setting up environment variables\",
+  \"deployment_script\": \"#!/bin/bash\\n# Deployment script content here\",
+  \"ci_cd_config\": \"# CI/CD configuration file content\"
 }}
 
 Include:
@@ -88,16 +89,17 @@ Include:
 7. Monitoring and logs
 8. Troubleshooting tips
 
-Be specific to {platform} and include all necessary commands.
-Generate ONLY valid JSON:"#,
-            platform = platform_name,
-            name = plan.name,
-            description = plan.description,
-            deps = plan.dependencies.iter()
+Be specific to {} and include all necessary commands.
+Generate ONLY valid JSON:",
+            platform_name,
+            plan.name,
+            plan.description,
+            plan.dependencies.iter()
                 .take(5)
                 .map(|d| d.name.as_str())
                 .collect::<Vec<_>>()
-                .join(", ")
+                .join(", "),
+            platform_name
         );
         
         let request = GenerationRequest {
@@ -117,15 +119,13 @@ Generate ONLY valid JSON:"#,
         
         let mut guide: serde_json::Value = serde_json::from_str(&json_str)?;
         
-        // Add platform to the guide
-        guide["platform"] = serde_json::json!(platform);
+        guide["platform"] = serde_json::json!(self.platform_to_string(&platform));
         
         let deployment_guide: DeploymentGuide = serde_json::from_value(guide)?;
         
         Ok(deployment_guide)
     }
     
-    /// Generate deployment guides for multiple platforms
     pub async fn generate_multiple_guides(
         &self,
         plan: &ProjectPlan,
@@ -143,7 +143,6 @@ Generate ONLY valid JSON:"#,
         Ok(guides)
     }
     
-    /// Generate Docker configuration
     pub async fn generate_docker_config(
         &self,
         plan: &ProjectPlan,
@@ -188,7 +187,10 @@ DOCKER_COMPOSE:
         let request = GenerationRequest {
             model: "deepseek-coder-v2:16b".to_string(),
             prompt,
-            system_prompt: Some("You are a Docker expert. Generate optimized, production-ready Docker configurations.".to_string()),
+            system_prompt: Some(
+                "You are a Docker expert. Generate optimized, production-ready Docker configurations."
+                    .to_string()
+            ),
             temperature: 0.5,
             max_tokens: 2048,
         };
@@ -200,11 +202,10 @@ DOCKER_COMPOSE:
         Ok((dockerfile, docker_compose))
     }
     
-    /// Generate CI/CD configuration
     pub async fn generate_ci_cd_config(
         &self,
         plan: &ProjectPlan,
-        platform: &str, // "github", "gitlab", "circleci", etc.
+        platform: &str,
     ) -> Result<String> {
         let prompt = format!(
             r#"Generate a {platform} CI/CD configuration for this project:
@@ -225,7 +226,8 @@ Generate a complete, production-ready CI/CD configuration.
 Include comments explaining each step."#,
             platform = platform,
             name = plan.name,
-            deps = plan.dependencies.iter()
+            deps = plan.dependencies
+                .iter()
                 .take(5)
                 .map(|d| d.name.as_str())
                 .collect::<Vec<_>>()
@@ -235,7 +237,10 @@ Include comments explaining each step."#,
         let request = GenerationRequest {
             model: "deepseek-coder-v2:16b".to_string(),
             prompt,
-            system_prompt: Some(format!("You are a CI/CD expert. Generate complete {} workflow configurations.", platform)),
+            system_prompt: Some(format!(
+                "You are a CI/CD expert. Generate complete {} workflow configurations.",
+                platform
+            )),
             temperature: 0.5,
             max_tokens: 2048,
         };
@@ -245,8 +250,6 @@ Include comments explaining each step."#,
         
         Ok(config)
     }
-    
-    // Helper methods
     
     fn platform_name(&self, platform: &DeploymentPlatform) -> &str {
         match platform {
@@ -260,14 +263,27 @@ Include comments explaining each step."#,
             DeploymentPlatform::Kubernetes => "Kubernetes",
         }
     }
+
+    fn platform_to_string(&self, platform: &DeploymentPlatform) -> String {
+        match platform {
+            DeploymentPlatform::Vercel => "vercel".to_string(),
+            DeploymentPlatform::Netlify => "netlify".to_string(),
+            DeploymentPlatform::Railway => "railway".to_string(),
+            DeploymentPlatform::Heroku => "heroku".to_string(),
+            DeploymentPlatform::AWS => "aws".to_string(),
+            DeploymentPlatform::DigitalOcean => "digitalocean".to_string(),
+            DeploymentPlatform::Docker => "docker".to_string(),
+            DeploymentPlatform::Kubernetes => "kubernetes".to_string(),
+        }
+    }
     
     fn extract_json(&self, text: &str) -> Result<String> {
-        let code_block_re = regex::Regex::new(r"```(?:json)?\s*\n(.*?)\n```").unwrap();
+        let code_block_re = Regex::new(r"```(?:json)?\s*\n(.*?)\n```")?;
         if let Some(captures) = code_block_re.captures(text) {
             return Ok(captures.get(1).unwrap().as_str().to_string());
         }
         
-        let json_re = regex::Regex::new(r"\{[\s\S]*\}").unwrap();
+        let json_re = Regex::new(r"\{[\s\S]*\}")?;
         if let Some(captures) = json_re.find(text) {
             return Ok(captures.as_str().to_string());
         }
@@ -276,23 +292,33 @@ Include comments explaining each step."#,
     }
     
     fn clean_code(&self, text: &str) -> String {
-        let code_block_re = regex::Regex::new(r"```[\w]*\s*\n([\s\S]*?)\n```").unwrap();
-        if let Some(captures) = code_block_re.captures(text) {
-            return captures.get(1).unwrap().as_str().to_string();
+        match Regex::new(r"```[\w]*\s*\n([\s\S]*?)\n```") {
+            Ok(code_block_re) => {
+                if let Some(captures) = code_block_re.captures(text) {
+                    return captures.get(1).unwrap().as_str().to_string();
+                }
+                text.to_string()
+            }
+            Err(_) => text.to_string(),
         }
-        text.to_string()
     }
     
     fn extract_docker_files(&self, text: &str) -> Result<(String, String)> {
-        let dockerfile_re = regex::Regex::new(r"DOCKERFILE:[\s\S]*?```[\w]*\s*\n([\s\S]*?)\n```").unwrap();
-        let compose_re = regex::Regex::new(r"DOCKER_COMPOSE:[\s\S]*?```[\w]*\s*\n([\s\S]*?)\n```").unwrap();
+        let dockerfile_re = Regex::new(
+            r"DOCKERFILE:[\s\S]*?```[\w]*\s*\n([\s\S]*?)\n```"
+        )?;
+        let compose_re = Regex::new(
+            r"DOCKER_COMPOSE:[\s\S]*?```[\w]*\s*\n([\s\S]*?)\n```"
+        )?;
         
-        let dockerfile = dockerfile_re.captures(text)
+        let dockerfile = dockerfile_re
+            .captures(text)
             .and_then(|c| c.get(1))
             .map(|m| m.as_str().to_string())
             .unwrap_or_default();
         
-        let docker_compose = compose_re.captures(text)
+        let docker_compose = compose_re
+            .captures(text)
             .and_then(|c| c.get(1))
             .map(|m| m.as_str().to_string())
             .unwrap_or_default();
@@ -301,7 +327,12 @@ Include comments explaining each step."#,
     }
 }
 
-// Tauri commands
+impl Default for DeploymentGenerator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[tauri::command]
 pub async fn generate_deployment_guide(
     project_name: String,
@@ -310,8 +341,7 @@ pub async fn generate_deployment_guide(
 ) -> Result<DeploymentGuide, String> {
     let generator = DeploymentGenerator::new();
     
-    // Create minimal plan from provided info
-    let plan = super::pipeline::ProjectPlan {
+    let plan = ProjectPlan {
         name: project_name,
         description: project_description,
         file_structure: Vec::new(),
@@ -332,7 +362,8 @@ pub async fn generate_deployment_guide(
         _ => DeploymentPlatform::Vercel,
     };
     
-    generator.generate_deployment_guide(&plan, deployment_platform)
+    generator
+        .generate_deployment_guide(&plan, deployment_platform)
         .await
         .map_err(|e| e.to_string())
 }
@@ -344,7 +375,7 @@ pub async fn generate_docker_files(
 ) -> Result<(String, String), String> {
     let generator = DeploymentGenerator::new();
     
-    let plan = super::pipeline::ProjectPlan {
+    let plan = ProjectPlan {
         name: project_name,
         description: project_description,
         file_structure: Vec::new(),
@@ -353,7 +384,31 @@ pub async fn generate_docker_files(
         environment_variables: Vec::new(),
     };
     
-    generator.generate_docker_config(&plan)
+    generator
+        .generate_docker_config(&plan)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn generate_ci_cd_configuration(
+    project_name: String,
+    project_description: String,
+    ci_platform: String,
+) -> Result<String, String> {
+    let generator = DeploymentGenerator::new();
+    
+    let plan = ProjectPlan {
+        name: project_name,
+        description: project_description,
+        file_structure: Vec::new(),
+        dependencies: Vec::new(),
+        setup_commands: Vec::new(),
+        environment_variables: Vec::new(),
+    };
+    
+    generator
+        .generate_ci_cd_config(&plan, &ci_platform)
         .await
         .map_err(|e| e.to_string())
 }

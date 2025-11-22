@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use anyhow::Result;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -112,8 +112,8 @@ impl PerformanceProfiler {
                     session.duration = start.elapsed().as_millis() as u64;
                 }
                 
-                // Calculate metrics
-                self.calculate_metrics(session);
+                // Calculate metrics - fixed borrow checker issue
+                Self::calculate_metrics_static(session);
                 
                 let result = session.clone();
                 self.current_session = None;
@@ -173,7 +173,8 @@ impl PerformanceProfiler {
         Ok(())
     }
     
-    fn calculate_metrics(&self, session: &mut ProfileSession) {
+    // Changed to static method to avoid borrow checker issues
+    fn calculate_metrics_static(session: &mut ProfileSession) {
         if session.samples.is_empty() {
             return;
         }

@@ -16,7 +16,7 @@
  * @version 1.0.0
  */
 
-import { invoke } from '@tauri-apps/api/tauri';
+import { invoke } from '@tauri-apps/api/core';
 
 /**
  * Supported package managers
@@ -176,7 +176,7 @@ export interface PackageSearchResult {
  */
 export class PackageManagerUI {
   private currentManager: PackageManager = PackageManager.NPM;
-  private installedPackages: InstalledPackage[] = [];
+  private _installedPackages: InstalledPackage[] = [];
   private dependencyTree: DependencyTreeNode | null = null;
   private vulnerabilities: SecurityVulnerability[] = [];
   private runningScripts: Map<string, any> = new Map();
@@ -260,7 +260,7 @@ export class PackageManagerUI {
         manager: this.currentManager,
       });
       
-      this.installedPackages = packages;
+      this._installedPackages = packages;
       return packages;
     } catch (error) {
       console.error('Failed to list packages:', error);
@@ -775,7 +775,7 @@ export class PackageManagerUI {
         ...packageJson.devDependencies,
       };
 
-      for (const [pkg, version] of Object.entries(dependencies)) {
+      for (const [pkg, _version] of Object.entries(dependencies)) {
         // This would need actual deprecation data
         // Just a placeholder example
         if (pkg === 'request') {

@@ -128,7 +128,7 @@ export interface GenerationResult {
 export class ProjectTemplatesGenerator {
   private templates: Map<string, ProjectTemplate> = new Map();
   private readonly STORAGE_KEY = 'luciai_project_templates';
-  private readonly MARKETPLACE_URL = 'https://templates.luciaistudio.com/api';
+  private readonly _MARKETPLACE_URL = 'https://templates.luciaistudio.com/api';
 
   constructor() {
     this.loadFromStorage();
@@ -379,7 +379,7 @@ export class ProjectTemplatesGenerator {
       const files = options.customFiles || template.fileStructure;
       for (const fileNode of files) {
         try {
-          const fullPath = `${options.outputPath}/${fileNode.path}`;
+          const _fullPath = `${options.outputPath}/${fileNode.path}`;
           
           if (fileNode.type === 'directory') {
             // Create directory (mock - would use actual file system)

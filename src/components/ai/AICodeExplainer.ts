@@ -17,7 +17,7 @@
  * @version 1.0.0
  */
 
-import { invoke } from '@tauri-apps/api/tauri';
+import { invoke } from '@tauri-apps/api/core';
 
 /**
  * Explanation complexity levels
@@ -789,7 +789,7 @@ export class AICodeExplainer {
     return recommendations;
   }
 
-  private parseCodeSmells(response: string, code: string): CodeSmell[] {
+  private parseCodeSmells(_response: string, _code: string): CodeSmell[] {
     // Simplified parsing - would be more sophisticated in production
     return [];
   }

@@ -16,7 +16,7 @@
  * @version 1.0.0
  */
 
-import { invoke } from '@tauri-apps/api/tauri';
+import { invoke } from '@tauri-apps/api/core';
 
 /**
  * Migration types

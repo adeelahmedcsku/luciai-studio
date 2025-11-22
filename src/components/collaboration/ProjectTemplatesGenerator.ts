@@ -778,6 +778,11 @@ export class ProjectTemplatesGenerator {
       language: SnippetLanguage.TYPESCRIPT,
       tags: ['react', 'typescript', 'vite', 'tailwind', 'modern'],
       visibility: TemplateVisibility.PUBLIC,
+      author: {
+      id: this.currentUser.id,
+      name: this.currentUser.name,
+      email: this.currentUser.email
+    },
       variables: [
         {
           name: 'projectName',
@@ -870,6 +875,11 @@ export class ProjectTemplatesGenerator {
       language: SnippetLanguage.PYTHON,
       tags: ['python', 'fastapi', 'api', 'async'],
       visibility: TemplateVisibility.PUBLIC,
+      author: {
+      id: this.currentUser.id,
+      name: this.currentUser.name,
+      email: this.currentUser.email
+    },
       variables: [
         {
           name: 'projectName',

@@ -528,7 +528,7 @@ export class PythonDevelopmentTools {
     // Placeholder - would call backend
   }
 
-  private async createFile(path: string, content: string): Promise<void> {
+  private async createFile(_path: string, _ontent: string): Promise<void> {
     // Placeholder - would call backend
   }
 

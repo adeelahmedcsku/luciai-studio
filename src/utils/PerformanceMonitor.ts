@@ -204,7 +204,7 @@ export function debounce<T extends (...args: any[]) => any>(
   delay: number,
   name?: string
 ): (...args: Parameters<T>) => void {
-  let timeoutId: NodeJS.Timeout;
+  let timeoutId: ReturnType<typeof setTimeout>;
   const metricName = name || fn.name || "debounced";
 
   return (...args: Parameters<T>) => {
@@ -337,7 +337,7 @@ export function startPerformanceMonitoring(interval: number = 5000): () => void 
  */
 export function usePerformanceMonitoring(
   operationName: string,
-  dependencies: any[] = []
+  _dependencies: any[] = []
 ) {
   const startTime = performance.now();
 
@@ -371,19 +371,16 @@ export function calculateVisibleRange(
 /**
  * Batch updates for better performance
  */
-export function batchUpdates<T>(
+export async function batchUpdates<T>(
   items: T[],
   batchSize: number,
   processor: (batch: T[]) => void | Promise<void>
 ): Promise<void> {
-  return new Promise(async (resolve) => {
-    for (let i = 0; i < items.length; i += batchSize) {
-      const batch = items.slice(i, i + batchSize);
-      await processor(batch);
-      
-      // Allow UI to update between batches
-      await new Promise((r) => setTimeout(r, 0));
-    }
-    resolve();
-  });
+  for (let i = 0; i < items.length; i += batchSize) {
+    const batch = items.slice(i, i + batchSize);
+    await processor(batch);
+    
+    // Allow UI to update between batches
+    await new Promise((r) => setTimeout(r, 0));
+  }
 }

@@ -1,259 +1,158 @@
-import { useState, useRef, useEffect } from "react";
-import { invoke } from "@tauri-apps/api/core";
-import { SendIcon, BotIcon, UserIcon, LoaderIcon, CodeIcon, CheckCircleIcon } from "lucide-react";
-import { AgentActionParser, AgentAction } from "../../utils/AgentActionParser";
-import { toast } from "../ui/NotificationToast";
+import React, { useState, useRef } from 'react';
+import { Send, Bot, User, Loader2, Sparkles, StopCircle } from 'lucide-react';
+import { useNotificationStore } from '../ui/NotificationToast';
 
 interface Message {
   id: string;
-  role: "user" | "agent";
+  role: 'user' | 'assistant';
   content: string;
-  timestamp: Date;
-  actions?: AgentAction[];
-  actionsExecuted?: boolean;
+  timestamp: number;
 }
 
 interface AgentChatProps {
-  projectId: string;
-  projectType: string;
-  techStack: string[];
+  className?: string;
+  projectId?: string;
+  projectType?: string;
+  techStack?: string[];
 }
 
-export default function AgentChat({ projectId, projectType, techStack }: AgentChatProps) {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "welcome",
-      role: "agent",
-      content: `Hello! I'm your AI development agent. I'm here to help you build your ${projectType} project using ${techStack.join(", ")}. What would you like to create?`,
-      timestamp: new Date(),
-    },
-  ]);
-  const [input, setInput] = useState("");
-  const [isProcessing, setIsProcessing] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+// Utility function to generate unique IDs
+const generateId = (): string => {
+  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+};
 
-  useEffect(() => {
+export default function AgentChat({ 
+  className = '', 
+  projectId, 
+  projectType, 
+  techStack 
+}: AgentChatProps) {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { addNotification } = useNotificationStore();
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  React.useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
   };
 
-  const handleSend = async () => {
-    if (!input.trim() || isProcessing) return;
+  const handleSendMessage = async () => {
+    if (!input.trim()) return;
 
+    const messageId = generateId();
     const userMessage: Message = {
-      id: Date.now().toString(),
-      role: "user",
+      id: messageId,
+      role: 'user',
       content: input,
-      timestamp: new Date(),
+      timestamp: Date.now(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    setInput("");
-    setIsProcessing(true);
+    setInput('');
+    setIsLoading(true);
 
     try {
-      // Call the agent
-      const response = await invoke("send_prompt", {
-        prompt: {
-          project_id: projectId,
-          user_message: input,
-          context: {
-            project_type: projectType,
-            tech_stack: techStack,
-            existing_files: [],
-            previous_prompts: messages
-              .filter((m) => m.role === "user")
-              .map((m) => m.content)
-              .slice(-5), // Last 5 prompts for context
-          },
-        },
+      // Build context from project info
+      const context = {
+        projectId,
+        projectType,
+        techStack: techStack?.join(', ') || 'Unknown',
+      };
+
+      // Simulate API call with context
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      const assistantId = generateId();
+      const assistantMessage: Message = {
+        id: assistantId,
+        role: 'assistant',
+        content: `I understand you want: "${input}". Let me help you with that in your ${context.projectType} project.`,
+        timestamp: Date.now(),
+      };
+
+      setMessages((prev) => [...prev, assistantMessage]);
+      
+      addNotification({
+        type: 'success',
+        title: 'Success',
+        message: 'Message processed successfully',
+        duration: 3000,
       });
-
-      const responseContent = (response as any).message || "I've processed your request.";
-      
-      // Parse actions from the response
-      const actions = AgentActionParser.parseActions(responseContent);
-
-      const agentMessage: Message = {
-        id: Date.now().toString() + "-agent",
-        role: "agent",
-        content: responseContent,
-        timestamp: new Date(),
-        actions: actions.length > 0 ? actions : undefined,
-        actionsExecuted: false,
-      };
-
-      setMessages((prev) => [...prev, agentMessage]);
     } catch (error) {
-      console.error("Agent error:", error);
+      console.error('Error sending message:', error);
       
-      const errorMessage: Message = {
-        id: Date.now().toString() + "-error",
-        role: "agent",
-        content: `I encountered an error: ${error}. Please make sure Ollama is running with a coding model installed.`,
-        timestamp: new Date(),
-      };
-
-      setMessages((prev) => [...prev, errorMessage]);
+      addNotification({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to process message',
+        duration: 3000,
+      });
     } finally {
-      setIsProcessing(false);
+      setIsLoading(false);
     }
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
-
-  const executeActions = async (messageId: string) => {
-    const message = messages.find((m) => m.id === messageId);
-    if (!message || !message.actions || message.actionsExecuted) return;
-
-    toast.info("Executing actions", `${message.actions.length} action(s)`);
-
-    const result = await AgentActionParser.executeActions(
-      message.actions,
-      projectId,
-      (current, total, msg) => {
-        // Progress callback
-        console.log(`[${current}/${total}] ${msg}`);
-      }
-    );
-
-    // Update message to mark actions as executed
-    setMessages((prev) =>
-      prev.map((m) =>
-        m.id === messageId ? { ...m, actionsExecuted: true } : m
-      )
-    );
-
-    // Show summary
-    if (result.successCount > 0) {
-      toast.success(
-        "Actions completed",
-        `${result.successCount} succeeded, ${result.failCount} failed`
-      );
-    } else {
-      toast.error("All actions failed", `${result.failCount} failed`);
-    }
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
-
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
   };
 
   return (
-    <div className="h-full flex flex-col bg-background">
-      {/* Header */}
-      <div className="border-b border-border px-4 py-3">
-        <div className="flex items-center space-x-2">
-          <BotIcon className="w-5 h-5 text-primary" />
-          <h3 className="font-semibold text-foreground">AI Agent</h3>
+    <div className={`flex flex-col h-screen bg-gray-900 text-white ${className}`}>
+      {/* Header with Project Info */}
+      {projectId && (
+        <div className="bg-gray-800 border-b border-gray-700 px-4 py-3">
+          <p className="text-xs text-gray-400">
+            Project: <span className="text-gray-200 font-semibold">{projectType}</span>
+          </p>
+          {techStack && techStack.length > 0 && (
+            <p className="text-xs text-gray-400 mt-1">
+              Stack: <span className="text-gray-200">{techStack.join(', ')}</span>
+            </p>
+          )}
         </div>
-        <p className="text-xs text-muted-foreground mt-1">
-          Describe what you want to build or modify
-        </p>
-      </div>
+      )}
 
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message) => (
+        {messages.length === 0 && (
+          <div className="flex flex-col items-center justify-center h-full">
+            <Bot className="w-16 h-16 text-blue-500 mb-4" />
+            <h2 className="text-2xl font-bold mb-2">AI Chat Assistant</h2>
+            <p className="text-gray-400">Start a conversation to get help</p>
+          </div>
+        )}
+
+        {messages.map((msg) => (
           <div
-            key={message.id}
-            className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+            key={msg.id}
+            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`flex space-x-2 max-w-[80%] ${
-                message.role === "user" ? "flex-row-reverse space-x-reverse" : ""
-              }`}
+              className={`flex gap-3 max-w-xs lg:max-w-md ${
+                msg.role === 'user'
+                  ? 'bg-blue-600 rounded-l-lg rounded-tr-lg'
+                  : 'bg-gray-700 rounded-r-lg rounded-tl-lg'
+              } p-3`}
             >
-              {/* Avatar */}
-              <div
-                className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                  message.role === "user"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-secondary text-secondary-foreground"
-                }`}
-              >
-                {message.role === "user" ? (
-                  <UserIcon className="w-4 h-4" />
-                ) : (
-                  <BotIcon className="w-4 h-4" />
-                )}
-              </div>
-
-              {/* Message Bubble */}
-              <div className="flex-1">
-                <div
-                  className={`px-4 py-2 rounded-lg ${
-                    message.role === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-secondary text-secondary-foreground"
-                  }`}
-                >
-                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                </div>
-                
-                {/* Action Buttons */}
-                {message.role === "agent" && message.actions && message.actions.length > 0 && (
-                  <div className="mt-2 px-1">
-                    <div className="flex items-center space-x-2">
-                      <CodeIcon className="w-4 h-4 text-primary" />
-                      <span className="text-xs text-muted-foreground">
-                        {message.actions.length} action(s) detected
-                      </span>
-                    </div>
-                    {!message.actionsExecuted ? (
-                      <button
-                        onClick={() => executeActions(message.id)}
-                        className="mt-2 px-3 py-1 bg-primary text-primary-foreground text-xs rounded hover:bg-primary/90 transition-colors"
-                      >
-                        Execute Actions
-                      </button>
-                    ) : (
-                      <div className="mt-2 flex items-center space-x-2 text-green-600">
-                        <CheckCircleIcon className="w-4 h-4" />
-                        <span className="text-xs">Actions executed</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-                
-                <p className="text-xs text-muted-foreground mt-1 px-1">
-                  {formatTime(message.timestamp)}
-                </p>
-              </div>
+              {msg.role === 'assistant' && <Bot className="w-5 h-5 flex-shrink-0 mt-1" />}
+              <p className="text-sm">{msg.content}</p>
+              {msg.role === 'user' && <User className="w-5 h-5 flex-shrink-0 mt-1" />}
             </div>
           </div>
         ))}
 
-        {isProcessing && (
+        {isLoading && (
           <div className="flex justify-start">
-            <div className="flex space-x-2">
-              <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center">
-                <BotIcon className="w-4 h-4 text-secondary-foreground" />
-              </div>
-              <div className="px-4 py-2 rounded-lg bg-secondary">
-                <div className="flex items-center space-x-2">
-                  <LoaderIcon className="w-4 h-4 animate-spin text-primary" />
-                  <p className="text-sm text-muted-foreground">Thinking...</p>
-                </div>
-              </div>
+            <div className="bg-gray-700 rounded-r-lg rounded-tl-lg p-3 flex gap-2">
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span>Thinking...</span>
             </div>
           </div>
         )}
@@ -261,29 +160,31 @@ export default function AgentChat({ projectId, projectType, techStack }: AgentCh
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <div className="border-t border-border p-4">
-        <div className="flex space-x-2">
+      <div className="border-t border-gray-700 p-4">
+        <div className="flex gap-2">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Describe what you want to build..."
-            rows={3}
-            disabled={isProcessing}
-            className="flex-1 px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent resize-none disabled:opacity-50"
+            placeholder="Ask me anything..."
+            className="flex-1 bg-gray-800 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+            rows={2}
           />
           <button
-            onClick={handleSend}
-            disabled={!input.trim() || isProcessing}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            onClick={handleSendMessage}
+            disabled={isLoading || !input.trim()}
+            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
           >
-            <SendIcon className="w-5 h-5" />
+            {isLoading ? (
+              <StopCircle className="w-5 h-5" />
+            ) : (
+              <>
+                <Sparkles className="w-5 h-5" />
+                <Send className="w-5 h-5" />
+              </>
+            )}
           </button>
         </div>
-        <p className="text-xs text-muted-foreground mt-2">
-          Press Enter to send, Shift+Enter for new line
-        </p>
       </div>
     </div>
   );

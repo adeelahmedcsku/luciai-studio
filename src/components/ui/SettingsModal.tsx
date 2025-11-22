@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { XIcon, CheckIcon } from "lucide-react";
-import { useThemeStore } from "../../store/themeStore";
+import { useThemeStore } from "../../store/useAppStore";
 
 interface SettingsModalProps {
   isOpen: boolean;

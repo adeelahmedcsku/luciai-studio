@@ -1,4 +1,4 @@
-import { editor, MarkerSeverity, Range } from 'monaco-editor';
+import { editor, MarkerSeverity } from 'monaco-editor';
 
 /**
  * Code Inspections System
@@ -31,6 +31,13 @@ export enum InspectionCategory {
   TYPESCRIPT_SPECIFIC = 'TypeScript Specific',
 }
 
+export interface IRange {
+  startLineNumber: number;
+  startColumn: number;
+  endLineNumber: number;
+  endColumn: number;
+}
+
 export interface Inspection {
   id: string;
   name: string;
@@ -50,7 +57,7 @@ export interface InspectionContext {
 
 export interface InspectionResult {
   inspection: string;
-  range: Range;
+  range: IRange;
   message: string;
   severity: InspectionSeverity;
   quickFixes?: QuickFix[];
@@ -59,7 +66,7 @@ export interface InspectionResult {
 export interface QuickFix {
   title: string;
   description: string;
-  apply: (model: editor.ITextModel, range: Range) => editor.IIdentifiedSingleEditOperation[];
+  apply: (model: editor.ITextModel, range: IRange) => editor.IIdentifiedSingleEditOperation[];
 }
 
 export class CodeInspectionsSystem {
@@ -102,8 +109,7 @@ export class CodeInspectionsSystem {
     this.registerInspection(this.createNestedLoopInspection());
     this.registerInspection(this.createRegexInLoopInspection());
     this.registerInspection(this.createArrayInLoopInspection());
-    this.registerInspection(this.createInefficient SortInspection());
-
+    this.registerInspection(this.createInefficientSortInspection());
     // Security
     this.registerInspection(this.createEvalUsageInspection());
     this.registerInspection(this.createDangerouslySetInnerHTMLInspection());
@@ -217,7 +223,9 @@ export class CodeInspectionsSystem {
                 description: 'Delete this variable declaration',
                 apply: (model, range) => [{
                   range: {
-                    ...range,
+                    startLineNumber: range.startLineNumber,
+                    startColumn: range.startColumn,
+                    endLineNumber: range.endLineNumber,
                     endColumn: model.getLineMaxColumn(range.endLineNumber),
                   },
                   text: '',
@@ -601,7 +609,10 @@ export class CodeInspectionsSystem {
    */
   public toMonacoMarkers(results: InspectionResult[]): editor.IMarkerData[] {
     return results.map(result => ({
-      ...result.range,
+      startLineNumber: result.range.startLineNumber,
+      startColumn: result.range.startColumn,
+      endLineNumber: result.range.endLineNumber,
+      endColumn: result.range.endColumn,
       severity: this.severityToMonaco(result.severity),
       message: result.message,
       source: result.inspection,
@@ -614,6 +625,7 @@ export class CodeInspectionsSystem {
       case InspectionSeverity.WARNING: return MarkerSeverity.Warning;
       case InspectionSeverity.INFO: return MarkerSeverity.Info;
       case InspectionSeverity.HINT: return MarkerSeverity.Hint;
+      default: return MarkerSeverity.Info;
     }
   }
 }

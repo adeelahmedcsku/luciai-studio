@@ -16,7 +16,7 @@
  * @version 1.0.0
  */
 
-import { invoke } from '@tauri-apps/api/tauri';
+import { invoke } from '@tauri-apps/api/core';
 
 /**
  * Supported test frameworks
@@ -798,8 +798,8 @@ export class TestRunnerUI {
       if (!metrics || metrics.runs.length < 2) continue;
       
       // Find runs in both summaries
-      const [suite1, test1] = testName.split('.');
-      const [suite2, test2] = testName.split('.');
+      const [_suite1, _test1] = testName.split('.');
+      const [_suite2, _test2] = testName.split('.');
       
       // This is simplified - would need actual implementation
     }

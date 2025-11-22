@@ -479,7 +479,7 @@ print('Training completed!')
   /**
    * Analyze dataset
    */
-  private async analyzeDataset(path: string): Promise<{
+  private async analyzeDataset(_path: string): Promise<{
     size: number;
     samples: number;
     features: number;
@@ -651,7 +651,7 @@ print('Training completed!')
   /**
    * Get default hyperparameters
    */
-  private getDefaultHyperparameters(framework: MLFramework, task: ModelTask): Record<string, any> {
+  private getDefaultHyperparameters(_framework: MLFramework, task: ModelTask): Record<string, any> {
     return {
       learning_rate: 0.001,
       batch_size: 32,

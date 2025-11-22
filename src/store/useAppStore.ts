@@ -40,6 +40,11 @@ export interface AppSettings {
   llmMaxTokens: number;
 }
 
+export interface ThemeState {
+  theme: 'light' | 'dark';
+  setTheme: (theme: 'light' | 'dark') => void;
+}
+
 // Store interface
 interface AppStore {
   // Current state
@@ -98,7 +103,7 @@ const defaultSettings: AppSettings = {
 // Create store with persistence
 export const useAppStore = create<AppStore>()(
   persist(
-    (set, get) => ({
+    (set, _get) => ({
       // Initial state
       currentProject: null,
       projects: [],
@@ -219,3 +224,10 @@ export const selectFileState = (state: AppStore) => ({
   selectedFile: state.selectedFile,
   openFiles: state.openFiles,
 });
+export const useThemeStore = create<ThemeState>((set) => ({
+  theme: localStorage.getItem('theme') as 'light' | 'dark' || 'dark',
+  setTheme: (theme) => {
+    localStorage.setItem('theme', theme);
+    set({ theme });
+  },
+}));

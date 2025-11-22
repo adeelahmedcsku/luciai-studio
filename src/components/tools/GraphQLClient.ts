@@ -16,7 +16,7 @@
  * @version 1.0.0
  */
 
-import { invoke } from '@tauri-apps/api/tauri';
+import { invoke } from '@tauri-apps/api/core';
 
 /**
  * GraphQL operation types
@@ -337,7 +337,11 @@ export class GraphQLClient {
       throw new Error(`Introspection failed: ${response.errors[0].message}`);
     }
 
-    this.schema = response.data.__schema;
+    if (!response.data || !response.data.__schema) {
+      throw new Error('Introspection failed: schema not returned by server');
+    }
+
+    this.schema = response.data.__schema as GraphQLSchema;
     return this.schema;
   }
 
@@ -395,7 +399,7 @@ export class GraphQLClient {
         }
       };
 
-      ws.onerror = (error) => {
+      ws.onerror = (_error) => {
         subscription.status = 'error';
         subscription.error = 'WebSocket connection error';
       };

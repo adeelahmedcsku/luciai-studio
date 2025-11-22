@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use anyhow::{Result, Context};
 use regex::Regex;
+use tauri::Emitter;
+
 
 use crate::llm::{LLMClient, GenerationRequest};
 

@@ -76,11 +76,11 @@ fn main() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            // ============ LICENSE COMMANDS ============
+            // License commands
             license::check_license_status,
             license::activate_license,
             
-            // ============ PROJECT COMMANDS ============
+            // Project commands
             project::create_project,
             project::list_projects,
             project::open_project,
@@ -91,22 +91,22 @@ fn main() {
             project::list_project_files,
             project::add_prompt_to_history,
             
-            // ============ AGENT COMMANDS ============
+            // Agent commands
             agent::send_prompt,
             agent::get_agent_history,
             agent::pipeline::generate_full_project,
             
-            // ============ LLM COMMANDS ============
+            // LLM commands
             llm::check_llm_status,
             llm::list_available_models,
             llm::generate_code,
             llm::generate_code_stream,
             llm::pull_model,
             
-            // ============ TERMINAL COMMANDS ============
+            // Terminal commands
             terminal::execute_command,
             
-            // ============ FILESYSTEM COMMANDS ============
+            // Filesystem commands
             filesystem::read_file,
             filesystem::write_file,
             filesystem::delete_file,
@@ -119,12 +119,12 @@ fn main() {
             filesystem::copy_file,
             filesystem::search_files,
             
-            // ============ TEMPLATE COMMANDS ============
+            // Template commands
             templates::list_project_templates,
             templates::get_project_template,
             templates::search_templates,
             
-            // ============ GIT COMMANDS ============
+            // Git commands
             git::git_init,
             git::git_status,
             git::git_add,
@@ -139,24 +139,24 @@ fn main() {
             git::git_diff,
             git::git_clone,
             
-            // ============ PREFERENCES COMMANDS ============
+            // Preferences commands
             preferences::load_preferences,
             preferences::save_preferences,
             preferences::reset_preferences,
             preferences::export_preferences,
             preferences::import_preferences,
             
-            // ============ REFACTORING COMMANDS ============
+            // Refactoring commands
             agent::refactorer::refactor_code,
             agent::refactorer::explain_code,
             agent::refactorer::convert_code_language,
             
-            // ============ DEPLOYMENT COMMANDS (V2.2 NEW!) ============
+            // Deployment commands
             agent::deployment::generate_deployment_guide,
             agent::deployment::generate_docker_files,
             agent::deployment::generate_ci_cd_configuration,
             
-            // ============ SNIPPETS COMMANDS ============
+            // Snippets commands
             snippets::create_snippet,
             snippets::update_snippet,
             snippets::delete_snippet,
@@ -169,31 +169,31 @@ fn main() {
             snippets::export_snippets,
             snippets::import_snippets,
             
-            // ============ SHORTCUTS COMMANDS ============
+            // Shortcuts commands
             shortcuts::get_all_shortcuts,
             shortcuts::get_shortcuts_by_category,
             shortcuts::update_keyboard_shortcut,
             shortcuts::reset_shortcuts_to_defaults,
             
-            // ============ CLOUD LLM COMMANDS ============
+            // Cloud LLM commands
             cloud_llm::add_cloud_llm_config,
             cloud_llm::test_cloud_llm_connection,
             cloud_llm::generate_with_cloud_llm,
             cloud_llm::list_cloud_llm_configs,
             
-            // ============ PERFORMANCE COMMANDS ============
+            // Performance monitoring commands
             performance::get_performance_metrics,
             performance::reset_performance_metrics,
             performance::track_llm_request_perf,
             performance::track_project_generation_perf,
             performance::track_ide_action,
             
-            // ============ TESTING COMMANDS ============
+            // Testing commands
             testing::detect_test_framework,
             testing::run_project_tests,
             testing::watch_tests,
             
-            // ============ PLUGIN COMMANDS ============
+            // Plugin commands
             plugins::list_plugins,
             plugins::get_plugin_info,
             plugins::toggle_plugin_enabled,
@@ -202,7 +202,7 @@ fn main() {
             plugins::execute_plugin_command,
             plugins::search_plugin_marketplace,
             
-            // ============ AUTO-UPDATE COMMANDS ============
+            // Auto-update commands
             updater::check_for_updates,
             updater::download_update,
             updater::install_update,
@@ -210,7 +210,7 @@ fn main() {
             updater::save_update_settings,
             updater::get_current_version,
             
-            // ============ DATABASE COMMANDS ============
+            // Database commands
             database::init_database,
             database::add_project_history,
             database::get_project_history,
@@ -226,6 +226,17 @@ fn main() {
             database::list_workspace_sessions,
             database::delete_workspace_session,
             database::get_database_size,
+            
+            // Profiler commands
+            profiler::start_performance_profiling,
+            profiler::stop_performance_profiling,
+            profiler::add_performance_sample,
+            profiler::record_function_performance,
+            profiler::get_profile_session,
+            profiler::list_profile_sessions,
+            profiler::generate_performance_report,
+            profiler::get_current_memory_snapshot,
+            profiler::get_session_cpu_profile,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

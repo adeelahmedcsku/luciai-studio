@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { toast } from "../ui/NotificationToast";
+import { toast } from "../components/ui/NotificationToast";
 
 export interface AgentAction {
   type: "create_file" | "modify_file" | "delete_file" | "create_directory" | "run_command" | "install_package";
@@ -249,7 +249,7 @@ export class AgentActionParser {
         if (checkYarn) packageManager = "yarn";
       } catch {}
 
-      const command = `${packageManager} install ${packageName}`;
+      const _command = `${packageManager} install ${packageName}`;
 
       toast.info("Installing package", packageName);
 

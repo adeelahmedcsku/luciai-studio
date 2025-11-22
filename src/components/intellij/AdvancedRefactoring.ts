@@ -1,4 +1,4 @@
-import { editor, languages, Range, Selection } from 'monaco-editor';
+import { editor, IPosition, IRange, languages, Position, Range, Selection } from 'monaco-editor';
 
 /**
  * Advanced Refactoring System
@@ -328,6 +328,54 @@ export class AdvancedRefactoring {
             startColumn: 1,
             endLineNumber: context.selection.endLineNumber + 1,
             endColumn: 1,
+            isEmpty: function (): boolean {
+              throw new Error('Function not implemented.');
+            },
+            containsPosition: function (position: IPosition): boolean {
+              throw new Error('Function not implemented.');
+            },
+            containsRange: function (range: IRange): boolean {
+              throw new Error('Function not implemented.');
+            },
+            strictContainsRange: function (range: IRange): boolean {
+              throw new Error('Function not implemented.');
+            },
+            plusRange: function (range: IRange): Range {
+              throw new Error('Function not implemented.');
+            },
+            intersectRanges: function (range: IRange): Range | null {
+              throw new Error('Function not implemented.');
+            },
+            equalsRange: function (other: IRange | null | undefined): boolean {
+              throw new Error('Function not implemented.');
+            },
+            getEndPosition: function (): Position {
+              throw new Error('Function not implemented.');
+            },
+            getStartPosition: function (): Position {
+              throw new Error('Function not implemented.');
+            },
+            setEndPosition: function (endLineNumber: number, endColumn: number): Range {
+              throw new Error('Function not implemented.');
+            },
+            setStartPosition: function (startLineNumber: number, startColumn: number): Range {
+              throw new Error('Function not implemented.');
+            },
+            collapseToStart: function (): Range {
+              throw new Error('Function not implemented.');
+            },
+            collapseToEnd: function (): Range {
+              throw new Error('Function not implemented.');
+            },
+            delta: function (lineCount: number): Range {
+              throw new Error('Function not implemented.');
+            },
+            isSingleLine: function (): boolean {
+              throw new Error('Function not implemented.');
+            },
+            toJSON: function (): IRange {
+              throw new Error('Function not implemented.');
+            }
           },
           text: '',
         });
@@ -713,6 +761,54 @@ export class AdvancedRefactoring {
         startColumn: pos.column,
         endLineNumber: pos.lineNumber,
         endColumn: pos.column + identifier.length,
+        isEmpty: function (): boolean {
+          throw new Error('Function not implemented.');
+        },
+        containsPosition: function (position: IPosition): boolean {
+          throw new Error('Function not implemented.');
+        },
+        containsRange: function (range: IRange): boolean {
+          throw new Error('Function not implemented.');
+        },
+        strictContainsRange: function (range: IRange): boolean {
+          throw new Error('Function not implemented.');
+        },
+        plusRange: function (range: IRange): Range {
+          throw new Error('Function not implemented.');
+        },
+        intersectRanges: function (range: IRange): Range | null {
+          throw new Error('Function not implemented.');
+        },
+        equalsRange: function (other: IRange | null | undefined): boolean {
+          throw new Error('Function not implemented.');
+        },
+        getEndPosition: function (): Position {
+          throw new Error('Function not implemented.');
+        },
+        getStartPosition: function (): Position {
+          throw new Error('Function not implemented.');
+        },
+        setEndPosition: function (endLineNumber: number, endColumn: number): Range {
+          throw new Error('Function not implemented.');
+        },
+        setStartPosition: function (startLineNumber: number, startColumn: number): Range {
+          throw new Error('Function not implemented.');
+        },
+        collapseToStart: function (): Range {
+          throw new Error('Function not implemented.');
+        },
+        collapseToEnd: function (): Range {
+          throw new Error('Function not implemented.');
+        },
+        delta: function (lineCount: number): Range {
+          throw new Error('Function not implemented.');
+        },
+        isSingleLine: function (): boolean {
+          throw new Error('Function not implemented.');
+        },
+        toJSON: function (): IRange {
+          throw new Error('Function not implemented.');
+        }
       });
     }
 

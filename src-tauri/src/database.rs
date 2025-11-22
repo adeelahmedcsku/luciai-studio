@@ -1,10 +1,10 @@
-use rusqlite::{Connection, params, Result as SqlResult};
+use rusqlite::{Connection, params, Result as SqlResult, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use anyhow::{Result, Context};
 use std::path::PathBuf;
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug)]
 pub struct Database {
     connection: Option<Connection>,
     db_path: PathBuf,
