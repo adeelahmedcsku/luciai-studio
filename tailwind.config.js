@@ -41,6 +41,14 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        sidebar: {
+          DEFAULT: "hsl(var(--sidebar-background))",
+          foreground: "hsl(var(--sidebar-foreground))",
+        },
+        "activity-bar": {
+          DEFAULT: "hsl(var(--activity-bar-background))",
+          foreground: "hsl(var(--activity-bar-foreground))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

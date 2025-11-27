@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { FolderIcon, PlusIcon, CodeIcon, SearchIcon } from "lucide-react";
-import NewProjectModal from "./NewProjectModal";
+import { NewProjectDialog } from "./NewProjectDialog";
+import { useAppStore } from "../../store/useAppStore";
 
 interface Project {
   id: string;
@@ -177,11 +178,39 @@ export default function ProjectDashboard({ onOpenProject }: ProjectDashboardProp
         </div>
       </main>
 
-      {/* New Project Modal */}
-      <NewProjectModal
+      {/* New Project Dialog */}
+      <NewProjectDialog
         isOpen={showNewProjectModal}
         onClose={() => setShowNewProjectModal(false)}
-        onProjectCreated={loadProjects}
+        onConfirm={async (templateId, projectName, location, aiPrompt) => {
+          try {
+            const projectPath = await invoke<string>("create_project_from_template", {
+              templateId,
+              projectName,
+              location,
+            });
+
+            // Store the AI prompt if provided
+            if (aiPrompt.trim()) {
+              useAppStore.getState().setPendingAiPrompt(aiPrompt);
+            }
+
+            setShowNewProjectModal(false);
+
+            // Refresh project list
+            await loadProjects();
+
+            // Automatically open the new project
+            // We need to find the project ID from the list or assume the path is the ID (which seems to be the case in this app)
+            // Based on IDEWorkspace, projectId is passed to open_project.
+            // Let's assume projectPath is what we need.
+            onOpenProject(projectPath);
+
+          } catch (error) {
+            console.error("Failed to create project:", error);
+            // You might want to show an error toast here if you have a toast component available in this context
+          }
+        }}
       />
     </div>
   );

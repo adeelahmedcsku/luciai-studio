@@ -241,3 +241,155 @@ pub async fn search_files(
     
     Ok(results)
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SearchResult {
+    pub file_path: String,
+    pub line_number: usize,
+    pub line_content: String,
+    pub match_start: usize,
+    pub match_end: usize,
+}
+
+/// Search for content in files
+#[command]
+pub async fn search_in_project(
+    project_path: String,
+    query: String,
+    case_sensitive: bool,
+    whole_word: bool,
+    use_regex: bool,
+    include_pattern: Option<String>,
+    exclude_pattern: Option<String>,
+) -> Result<Vec<SearchResult>, String> {
+    tracing::info!("Searching in project: {} for '{}'", project_path, query);
+    
+    let mut results = Vec::new();
+    let max_results = 1000; // Hard limit for now
+    
+    // Compile regex if needed
+    let regex = if use_regex {
+        regex::Regex::new(&query).map_err(|e| format!("Invalid regex: {}", e))?
+    } else {
+        let pattern = if case_sensitive {
+            regex::escape(&query)
+        } else {
+            format!("(?i){}", regex::escape(&query))
+        };
+        
+        let pattern = if whole_word {
+            format!("\\b{}\\b", pattern)
+        } else {
+            pattern
+        };
+        
+        regex::Regex::new(&pattern).map_err(|e| format!("Invalid regex pattern: {}", e))?
+    };
+
+    // TODO: Implement glob matching for include/exclude patterns
+    // For now, we'll just do a simple recursive walk and filter manually
+    
+    fn search_content_recursive(
+        dir: &Path,
+        regex: &regex::Regex,
+        results: &mut Vec<SearchResult>,
+        max_results: usize,
+    ) -> Result<(), String> {
+        if results.len() >= max_results {
+            return Ok(());
+        }
+        
+        let entries = fs::read_dir(dir)
+            .map_err(|e| format!("Failed to read directory: {}", e))?;
+            
+        for entry in entries {
+            if results.len() >= max_results {
+                break;
+            }
+            
+            let entry = entry.map_err(|e| format!("Failed to read entry: {}", e))?;
+            let path = entry.path();
+            let name = entry.file_name().to_string_lossy().to_string();
+            
+            // Basic exclusion
+            if name.starts_with('.') || name == "node_modules" || name == "target" || name == "dist" || name == "build" {
+                continue;
+            }
+            
+            if path.is_dir() {
+                search_content_recursive(&path, regex, results, max_results)?;
+            } else {
+                // Only search text files (basic heuristic)
+                // In a real app, we'd check mime type or extension
+                let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("").to_lowercase();
+                let binary_exts = ["png", "jpg", "jpeg", "gif", "ico", "pdf", "exe", "dll", "so", "dylib", "zip", "tar", "gz"];
+                if binary_exts.contains(&ext.as_str()) {
+                    continue;
+                }
+
+                match fs::read_to_string(&path) {
+                    Ok(content) => {
+                        for (line_idx, line) in content.lines().enumerate() {
+                            for mat in regex.find_iter(line) {
+                                if results.len() >= max_results {
+                                    break;
+                                }
+                                results.push(SearchResult {
+                                    file_path: path.to_string_lossy().to_string(),
+                                    line_number: line_idx + 1,
+                                    line_content: line.to_string(),
+                                    match_start: mat.start(),
+                                    match_end: mat.end(),
+                                });
+                            }
+                        }
+                    },
+                    Err(_) => continue, // Skip unreadable files
+                }
+            }
+        }
+        Ok(())
+    }
+
+    search_content_recursive(Path::new(&project_path), &regex, &mut results, max_results)?;
+    
+    Ok(results)
+}
+
+/// Reveal file in OS explorer
+#[command]
+pub async fn reveal_in_explorer(path: String) -> Result<(), String> {
+    tracing::info!("Revealing in explorer: {}", path);
+    
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("explorer")
+            .args(["/select,", &path]) // Comma is important
+            .spawn()
+            .map_err(|e| format!("Failed to open explorer: {}", e))?;
+    }
+    
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .args(["-R", &path])
+            .spawn()
+            .map_err(|e| format!("Failed to open finder: {}", e))?;
+    }
+    
+    #[cfg(target_os = "linux")]
+    {
+        // Linux is tricky, usually just open the folder
+        let parent = Path::new(&path).parent().unwrap_or(Path::new("/"));
+        std::process::Command::new("xdg-open")
+            .arg(parent)
+            .spawn()
+            .map_err(|e| format!("Failed to open file manager: {}", e))?;
+    }
+    
+    Ok(())
+}
+
+
+
+

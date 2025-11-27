@@ -3,25 +3,26 @@
     "productName": "Luciai Studio",
     "version": "2.2.0",
     "identifier": "com.luciaistudio.ide",
-
     "build": {
         "beforeDevCommand": "npm run dev",
         "beforeBuildCommand": "npm run build",
-        "devUrl": "http://localhost:5173",
+        "devUrl": "http://localhost:3006",
         "frontendDist": "../dist"
     },
     "app": {
-        "windows": [{
-            "title": "Luciai Studio - Cloud-Powered AI-Enabled IDE",
-            "width": 1400,
-            "height": 800,
-            "minWidth": 1200,
-            "minHeight": 700,
-            "resizable": true,
-            "fullscreen": false,
-            "decorations": true,
-            "transparent": false
-        }],
+        "windows": [
+            {
+                "title": "Luciai Studio - Cloud-Powered AI-Enabled IDE",
+                "width": 1400,
+                "height": 800,
+                "minWidth": 1200,
+                "minHeight": 700,
+                "resizable": true,
+                "fullscreen": false,
+                "decorations": false,
+                "transparent": false
+            }
+        ],
         "security": {
             "csp": null,
             "assetProtocol": {

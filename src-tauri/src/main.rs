@@ -27,6 +27,7 @@ mod themes;
 mod notifications;
 mod debugging;
 mod profiler;
+mod window;
 
 // Main state that will be shared across the app
 #[derive(Default)]
@@ -102,6 +103,7 @@ fn main() {
             llm::generate_code,
             llm::generate_code_stream,
             llm::pull_model,
+            llm::generate_llm_response,
             
             // ============ TERMINAL COMMANDS ============
             terminal::execute_command,
@@ -119,10 +121,17 @@ fn main() {
             filesystem::copy_file,
             filesystem::search_files,
             
+            // ============ WINDOW COMMANDS ============
+            window::minimize_window,
+            window::toggle_maximize,
+            window::close_window,
+            window::is_maximized,
+            
             // ============ TEMPLATE COMMANDS ============
             templates::list_project_templates,
             templates::get_project_template,
             templates::search_templates,
+            templates::create_project_from_template,
             
             // ============ GIT COMMANDS ============
             git::git_init,

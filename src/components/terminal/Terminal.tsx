@@ -13,9 +13,10 @@ interface TerminalOutput {
 
 interface TerminalProps {
   projectPath?: string;
+  initialCommand?: string;
 }
 
-export default function Terminal({ projectPath }: TerminalProps) {
+export default function Terminal({ projectPath, initialCommand }: TerminalProps) {
   const [history, setHistory] = useState<TerminalOutput[]>([]);
   const [input, setInput] = useState("");
   const [isExecuting, setIsExecuting] = useState(false);
@@ -23,10 +24,21 @@ export default function Terminal({ projectPath }: TerminalProps) {
   const [historyIndex, setHistoryIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const outputRef = useRef<HTMLDivElement>(null);
+  const hasExecutedInitial = useRef(false);
 
   useEffect(() => {
     scrollToBottom();
   }, [history]);
+
+  useEffect(() => {
+    if (initialCommand && !hasExecutedInitial.current && !isExecuting) {
+      hasExecutedInitial.current = true;
+      setInput(initialCommand);
+      // We need to wait for state update or call execute with the command directly
+      // Since executeCommand uses 'input' state, we'll modify executeCommand to accept an optional command arg
+      executeCommand(initialCommand);
+    }
+  }, [initialCommand]);
 
   const scrollToBottom = () => {
     if (outputRef.current) {
@@ -34,15 +46,15 @@ export default function Terminal({ projectPath }: TerminalProps) {
     }
   };
 
-  const executeCommand = async () => {
-    if (!input.trim() || isExecuting) return;
+  const executeCommand = async (cmdOverride?: string) => {
+    const cmdToRun = cmdOverride || input.trim();
+    if (!cmdToRun || (isExecuting && !cmdOverride)) return;
 
-    const command = input.trim();
-    setInput("");
+    if (!cmdOverride) setInput("");
     setIsExecuting(true);
 
     // Add to command history
-    setCommandHistory((prev) => [...prev, command]);
+    setCommandHistory((prev) => [...prev, cmdToRun]);
     setHistoryIndex(-1);
 
     try {
@@ -53,7 +65,7 @@ export default function Terminal({ projectPath }: TerminalProps) {
         success: boolean;
       }>("execute_command", {
         request: {
-          command: command,
+          command: cmdToRun,
           args: [],
           working_dir: projectPath || null,
         },
@@ -61,7 +73,7 @@ export default function Terminal({ projectPath }: TerminalProps) {
 
       const output: TerminalOutput = {
         id: Date.now().toString(),
-        command,
+        command: cmdToRun,
         output: result.stdout,
         error: result.stderr,
         exitCode: result.exit_code,
@@ -72,7 +84,7 @@ export default function Terminal({ projectPath }: TerminalProps) {
     } catch (error) {
       const output: TerminalOutput = {
         id: Date.now().toString(),
-        command,
+        command: cmdToRun,
         output: "",
         error: error as string,
         exitCode: 1,

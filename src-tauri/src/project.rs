@@ -137,9 +137,47 @@ impl ProjectManager {
         Ok(projects)
     }
     
-    pub fn open_project(&self, project_id: &str) -> Result<ProjectMetadata> {
+    pub fn open_project(&self, project_id_or_path: &str) -> Result<ProjectMetadata> {
+        // 1. Check if input is an existing absolute path
+        let path = PathBuf::from(project_id_or_path);
+        if path.exists() && path.is_dir() {
+            let metadata_path = path.join(".sai-metadata").join("project.json");
+            
+            if metadata_path.exists() {
+                return self.load_metadata_from_path(&metadata_path);
+            } else {
+                // Create transient metadata for external/new projects
+                let name = path.file_name()
+                    .unwrap_or_default()
+                    .to_string_lossy()
+                    .to_string();
+                    
+                return Ok(ProjectMetadata {
+                    project: Project {
+                        id: project_id_or_path.to_string(), // Use path as ID
+                        name: name.clone(),
+                        path: path.clone(),
+                        project_type: ProjectType::FullStack, // Default
+                        tech_stack: TechStack { 
+                            frontend: None, 
+                            backend: None, 
+                            database: None, 
+                            other: vec![] 
+                        },
+                        created_at: Utc::now(),
+                        last_modified: Utc::now(),
+                        description: "Imported project".to_string(),
+                    },
+                    prompt_history: Vec::new(),
+                    file_count: 0,
+                    total_lines: 0,
+                });
+            }
+        }
+
+        // 2. Fallback to managed project ID lookup
         let metadata_path = self.projects_dir
-            .join(project_id)
+            .join(project_id_or_path)
             .join(".sai-metadata")
             .join("project.json");
         

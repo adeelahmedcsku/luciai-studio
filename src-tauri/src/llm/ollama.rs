@@ -39,6 +39,8 @@ impl OllamaClient {
         temperature: f32,
         max_tokens: u32,
     ) -> Result<String> {
+        tracing::info!("Sending request to Ollama at {} for model {}", self.base_url, model);
+        
         let request = OllamaRequest {
             model: model.to_string(),
             prompt: prompt.to_string(),
@@ -56,10 +58,13 @@ impl OllamaClient {
             .map_err(|e| anyhow!("Failed to send request to Ollama: {}", e))?;
 
         if !response.status().is_success() {
+            let status = response.status();
+            let text = response.text().await.unwrap_or_default();
+            tracing::error!("Ollama error: Status {}, Body: {}", status, text);
             return Err(anyhow!(
                 "Ollama returned status {}: {}",
-                response.status(),
-                response.text().await.unwrap_or_default()
+                status,
+                text
             ));
         }
 

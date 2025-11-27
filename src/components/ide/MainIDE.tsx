@@ -24,6 +24,7 @@ export default function MainIDE() {
     <IDEWorkspace
       projectId={currentProjectId!}
       onBack={handleBackToDashboard}
+      onSwitchProject={handleOpenProject}
     />
   );
 }

@@ -62,7 +62,7 @@ pub async fn send_prompt(prompt: String) -> Result<String, String> {
     });
     
     let request = GenerationRequest {
-        model: "deepseek-coder-v2:16b".to_string(),
+        model: "deepseek-r1:8b".to_string(),
         prompt: prompt.clone(),
         system_prompt: Some("You are a helpful AI coding assistant.".to_string()),
         temperature: 0.7,

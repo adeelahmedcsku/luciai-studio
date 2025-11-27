@@ -14,6 +14,7 @@ import { LicenseActivation } from "./components/licensing/LicenseActivation";
 import { LicenseExpired } from "./components/licensing/LicenseExpired";
 import { LicenseStatusWidget } from "./components/licensing/LicenseStatusWidget";
 import { licenseManager } from "./components/licensing/LicenseManager";
+import { ThemeProvider } from "./context/ThemeContext";
 
 type AppView = 'loading' | 'activation' | 'expired' | 'ide';
 
@@ -28,7 +29,7 @@ function App() {
 
   useEffect(() => {
     initializeApp();
-    
+
     // Send heartbeat every 30 minutes
     const heartbeatInterval = setInterval(() => {
       licenseManager.sendHeartbeat();
@@ -56,7 +57,7 @@ function App() {
         // Invalid or expired license
         const gracePeriod = licenseManager.getGracePeriodEnd();
         const now = new Date();
-        
+
         if (gracePeriod && now < gracePeriod) {
           // Grace period active - allow usage but show warning
           setExpiredReason({ type: 'grace-period' });
@@ -115,7 +116,7 @@ function App() {
         if (licenseInfo) {
           const validUntil = new Date(licenseInfo.validUntil);
           const now = new Date();
-          
+
           if (now > validUntil) {
             setExpiredReason({ type: 'expired' });
             setCurrentView('expired');
@@ -155,10 +156,10 @@ function App() {
 
     case 'ide':
       return (
-        <>
+        <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
           <MainIDE />
           <LicenseStatusWidget onRenew={handleRenewClicked} />
-        </>
+        </ThemeProvider>
       );
 
     default:

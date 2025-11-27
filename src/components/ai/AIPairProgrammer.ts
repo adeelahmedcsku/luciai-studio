@@ -278,7 +278,7 @@ export class AIPairProgrammer {
   ): Promise<CodeSuggestion> {
     try {
       const fullPrompt = this.buildSuggestionPrompt(prompt, language, currentCode);
-      
+
       const response = await invoke<string>('generate_llm_response', {
         prompt: fullPrompt,
         systemPrompt: `You are an expert ${language} developer. Provide high-quality code suggestions with clear explanations.`,
@@ -300,7 +300,7 @@ export class AIPairProgrammer {
   ): Promise<DebugAssistance> {
     try {
       const prompt = this.buildDebugPrompt(problem, stackTrace, code);
-      
+
       const response = await invoke<string>('generate_llm_response', {
         prompt,
         systemPrompt: 'You are an expert debugger. Analyze errors thoroughly and provide actionable solutions.',
@@ -322,7 +322,7 @@ export class AIPairProgrammer {
   ): Promise<ArchitectureRecommendation> {
     try {
       const prompt = this.buildArchitecturePrompt(description, currentArchitecture, constraints);
-      
+
       const response = await invoke<string>('generate_llm_response', {
         prompt,
         systemPrompt: 'You are a software architect expert. Provide well-reasoned architecture recommendations.',
@@ -344,7 +344,7 @@ export class AIPairProgrammer {
   ): Promise<CodeReviewFeedback> {
     try {
       const prompt = this.buildReviewPrompt(code, language, focusAreas);
-      
+
       const response = await invoke<string>('generate_llm_response', {
         prompt,
         systemPrompt: 'You are an expert code reviewer. Provide constructive, detailed feedback.',
@@ -365,7 +365,7 @@ export class AIPairProgrammer {
   ): Promise<LearningTopic> {
     try {
       const prompt = `Explain the concept of "${topic}" at ${level} level. Include:\n1. Clear explanation\n2. Key concepts\n3. Practical examples\n4. Learning resources\n5. Practice exercises`;
-      
+
       const response = await invoke<string>('generate_llm_response', {
         prompt,
         systemPrompt: 'You are an expert technical educator. Explain concepts clearly with practical examples.',
@@ -391,7 +391,7 @@ export class AIPairProgrammer {
         prompt += `\nUse ${style} programming style.`;
       }
       prompt += '\nInclude comments and handle edge cases.';
-      
+
       const response = await invoke<string>('generate_llm_response', {
         prompt,
         systemPrompt: `You are an expert ${language} developer. Write clean, production-quality code.`,
@@ -427,7 +427,7 @@ export class AIPairProgrammer {
       .join('\n\n');
 
     const prompt = `Summarize this conversation:\n\n${conversationText}`;
-    
+
     const summary = await invoke<string>('generate_llm_response', {
       prompt,
       systemPrompt: 'Provide a concise summary of the key points discussed.',
@@ -512,23 +512,60 @@ export class AIPairProgrammer {
     context?: ChatMessage['context']
   ): Promise<ChatMessage> {
     const prompt = this.buildConversationPrompt(session, userMessage, context);
-    
-    const response = await invoke<string>('generate_llm_response', {
-      prompt,
-      systemPrompt: this.getSystemPrompt(session.type),
-    });
+    try {
+      const response = await invoke<string>('generate_llm_response', {
+        prompt: prompt, // Assuming 'prompt' is the correct variable name from buildConversationPrompt
+        systemPrompt: this.getSystemPrompt(session.type), // Reverted to original systemPrompt logic
+        provider: this.currentProvider,
+        model: this.currentModel,
+      });
 
-    const message: ChatMessage = {
-      id: `msg_${Date.now()}`,
-      role: MessageRole.ASSISTANT,
-      content: response,
-      timestamp: new Date(),
-      codeBlocks: this.extractCodeBlocks(response),
-      suggestions: this.extractSuggestions(response),
-    };
+      console.log('[AIPairProgrammer] Received response from backend:', response ? response.substring(0, 50) + '...' : 'Empty response');
 
-    return message;
+      const message: ChatMessage = {
+        id: crypto.randomUUID(),
+        role: MessageRole.ASSISTANT,
+        content: response,
+        timestamp: new Date(),
+        codeBlocks: this.extractCodeBlocks(response),
+        suggestions: this.extractSuggestions(response),
+      };
+
+      return message;
+    } catch (error) {
+      console.error('[AIPairProgrammer] Error generating response:', error);
+      // Try to ping to see if it's a connection issue
+      this.checkConnection().then(connected => {
+        console.log('[AIPairProgrammer] Connection check result:', connected ? 'Connected' : 'Disconnected');
+      });
+      throw error;
+    }
   }
+
+  public async checkConnection(): Promise<boolean> {
+    try {
+      console.log('[AIPairProgrammer] Pinging local LLM...');
+      const status = await invoke<boolean>('check_llm_status');
+      console.log('[AIPairProgrammer] Local LLM Status:', status);
+
+      console.log('[AIPairProgrammer] Listing available models...');
+      const models = await invoke<string[]>('list_available_models');
+      console.log('[AIPairProgrammer] Available Models:', models);
+
+      return status;
+    } catch (error) {
+      console.error('[AIPairProgrammer] Connection check failed:', error);
+      return false;
+    }
+  }
+
+  public setProvider(provider: string, model: string) {
+    this.currentProvider = provider;
+    this.currentModel = model;
+  }
+
+  private currentProvider: string = 'ollama';
+  private currentModel: string = 'gemma2:2b';
 
   private buildConversationPrompt(
     session: ConversationSession,
@@ -621,16 +658,19 @@ export class AIPairProgrammer {
   }
 
   private getSystemPrompt(type: ConversationType): string {
+    const basePrompt = 'You are an expert AI pair programmer. You can create, update, and read files in the project.';
+    const fileOpsInstruction = '\n\nTo create or update a file, you MUST use the following format:\n<file path="path/to/file.ext">\nfile content here\n</file>\n\nTo read a file, use:\n<read_file path="path/to/file.ext" />\n\nExample:\n<file path="src/components/Button.tsx">\nexport const Button = () => <button>Click me</button>;\n</file>\n\nAlways provide the full file content inside the tags.';
+
     const prompts = {
-      [ConversationType.GENERAL]: 'You are a helpful AI pair programmer. Provide clear, practical advice.',
-      [ConversationType.DEBUG]: 'You are an expert debugger. Help identify and fix issues efficiently.',
-      [ConversationType.REVIEW]: 'You are a senior code reviewer. Provide constructive, detailed feedback.',
-      [ConversationType.ARCHITECTURE]: 'You are a software architect. Recommend scalable, maintainable solutions.',
-      [ConversationType.REFACTOR]: 'You are a refactoring expert. Suggest improvements while maintaining functionality.',
-      [ConversationType.LEARN]: 'You are a patient teacher. Explain concepts clearly with examples.',
-      [ConversationType.GENERATE]: 'You are an expert developer. Generate clean, production-quality code.',
+      [ConversationType.GENERAL]: 'You are a helpful AI pair programmer. Provide clear, practical advice.' + fileOpsInstruction,
+      [ConversationType.DEBUG]: 'You are an expert debugger. Help identify and fix issues efficiently.' + fileOpsInstruction,
+      [ConversationType.REVIEW]: 'You are a senior code reviewer. Provide constructive, detailed feedback.' + fileOpsInstruction,
+      [ConversationType.ARCHITECTURE]: 'You are a software architect. Recommend scalable, maintainable solutions.' + fileOpsInstruction,
+      [ConversationType.REFACTOR]: 'You are a refactoring expert. Suggest improvements while maintaining functionality.' + fileOpsInstruction,
+      [ConversationType.LEARN]: 'You are a patient teacher. Explain concepts clearly with examples.' + fileOpsInstruction,
+      [ConversationType.GENERATE]: 'You are an expert developer. Generate clean, production-quality code.' + fileOpsInstruction,
     };
-    return prompts[type];
+    return prompts[type] || basePrompt + fileOpsInstruction;
   }
 
   private generateSessionTitle(type: ConversationType): string {
@@ -772,7 +812,7 @@ export class AIPairProgrammer {
       if (msg.role !== MessageRole.SYSTEM) {
         md += `### ${msg.role === MessageRole.USER ? '👤 User' : '🤖 Assistant'}\n\n`;
         md += `${msg.content}\n\n`;
-        
+
         if (msg.codeBlocks) {
           for (const block of msg.codeBlocks) {
             md += `\`\`\`${block.language}\n${block.code}\n\`\`\`\n\n`;

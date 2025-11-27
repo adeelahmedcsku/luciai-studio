@@ -108,6 +108,32 @@ impl GitManager {
         tracing::info!("Staged files: {:?}", paths);
         Ok(())
     }
+
+    /// Unstage files
+    pub fn reset(&self, paths: Vec<String>) -> Result<()> {
+        let mut args = vec!["reset", "HEAD"];
+        
+        if paths.is_empty() || paths.iter().any(|p| p == ".") {
+            // Reset all
+        } else {
+            for path in &paths {
+                args.push(path);
+            }
+        }
+        
+        let output = Command::new("git")
+            .args(&args)
+            .current_dir(&self.repo_path)
+            .output()
+            .context("Failed to unstage files")?;
+        
+        if !output.status.success() {
+            anyhow::bail!("Git reset failed: {}", String::from_utf8_lossy(&output.stderr));
+        }
+        
+        tracing::info!("Unstaged files: {:?}", paths);
+        Ok(())
+    }
     
     /// Commit changes
     pub fn commit(&self, message: &str) -> Result<String> {
@@ -178,6 +204,22 @@ impl GitManager {
         }
         
         tracing::info!("Created branch: {}", name);
+        Ok(())
+    }
+
+    /// Delete a branch
+    pub fn delete_branch(&self, name: &str) -> Result<()> {
+        let output = Command::new("git")
+            .args(&["branch", "-D", name])
+            .current_dir(&self.repo_path)
+            .output()
+            .context("Failed to delete branch")?;
+        
+        if !output.status.success() {
+            anyhow::bail!("Git branch deletion failed: {}", String::from_utf8_lossy(&output.stderr));
+        }
+        
+        tracing::info!("Deleted branch: {}", name);
         Ok(())
     }
     

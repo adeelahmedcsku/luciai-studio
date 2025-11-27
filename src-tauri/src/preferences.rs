@@ -26,11 +26,21 @@ pub struct EditorPreferences {
     pub auto_save_delay: u32, // milliseconds
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum CloudProvider {
+    Ollama,
+    Gemini,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LLMPreferences {
+    pub enabled: bool,
+    pub base_url: String,
     pub default_model: String,
     pub temperature: f32,
     pub max_tokens: u32,
+    pub cloud_provider: CloudProvider,
+    pub gemini_api_key: String,
     pub streaming: bool,
     pub auto_validate: bool,
     pub auto_test: bool,
@@ -97,9 +107,13 @@ impl Default for EditorPreferences {
 impl Default for LLMPreferences {
     fn default() -> Self {
         Self {
-            default_model: "deepseek-coder-v2:16b".to_string(),
+            enabled: true,
+            base_url: "http://localhost:11434".to_string(),
+            default_model: "gemma2:2b".to_string(),
             temperature: 0.7,
-            max_tokens: 4096,
+            max_tokens: 2048,
+            cloud_provider: CloudProvider::Ollama,
+            gemini_api_key: "".to_string(),
             streaming: true,
             auto_validate: true,
             auto_test: false,
